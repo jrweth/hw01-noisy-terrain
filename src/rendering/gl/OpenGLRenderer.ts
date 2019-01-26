@@ -6,7 +6,7 @@ import ShaderProgram from './ShaderProgram';
 
 // In this file, `gl` is accessible because it is imported above
 class OpenGLRenderer {
-  vertexSpacing: vec2;
+  vertexSpacing: vec2 = vec2.fromValues(1.0,1.0);
   time: number;
 
   constructor(public canvas: HTMLCanvasElement) {
@@ -16,9 +16,9 @@ class OpenGLRenderer {
     gl.clearColor(r, g, b, a);
   }
 
-  setVertexSpacing(spacing: vec2) {
-    this.vertexSpacing = spacing;
-  }
+  // setVertexSpacing(spacing: vec2) {
+  //   this.vertexSpacing = spacing;
+  // }
 
   setSize(width: number, height: number) {
     this.canvas.width = width;
@@ -42,7 +42,7 @@ class OpenGLRenderer {
     mat4.multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
     prog.setModelMatrix(model);
     prog.setViewProjMatrix(viewProj);
-    prog.setVertexSpacing(this.vertexSpacing);
+    //prog.setVertexSpacing(this.vertexSpacing);
     prog.setTime(this.time);
 
     for (let drawable of drawables) {

@@ -50,8 +50,8 @@ class ShaderProgram {
     this.unifModel      = gl.getUniformLocation(this.prog, "u_Model");
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
-    this.unifPlanePos   = gl.getUniformLocation(this.prog, "u_PlanePos");
-    this.unifVertexSpacing = gl.getUniformLocation(this.prog, 'u_VertexSpacing');
+    this.unifPlanePos      = gl.getUniformLocation(this.prog, "u_PlanePos");
+    this.unifVertexSpacing     = gl.getUniformLocation(this.prog, "u_VertexSpacing");
     this.unifTime       = gl.getUniformLocation(this.prog, "u_Time");
   }
 
@@ -98,11 +98,12 @@ class ShaderProgram {
   }
 
   setVertexSpacing(spacing: vec2) {
-     this.use();
-     if (this.unifVertexSpacing !== -1) {
-       gl.uniform2fv(this.unifVertexSpacing, spacing);
-     }
+    this.use();
+    if (this.unifVertexSpacing !== -1) {
+      gl.uniform2fv(this.unifVertexSpacing, spacing);
+    }
   }
+
 
   draw(d: Drawable) {
     this.use();

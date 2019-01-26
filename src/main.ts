@@ -96,17 +96,18 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(0, 10, -20), vec3.fromValues(0, 0, 0));
+  const camera = new Camera(vec3.fromValues(5.0, 10, -20), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(164.0 / 255.0, 233.0 / 255.0, 1.0, 1);
   gl.enable(gl.DEPTH_TEST);
-  renderer.setVertexSpacing(plane.getSubdivisionSpacing());
 
   const lambert = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/terrain-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/terrain-frag.glsl')),
   ]);
+  console.log(plane.getSubdivisionSpacing());
+  lambert.setVertexSpacing(plane.getSubdivisionSpacing());
 
   const flat = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/flat-vert.glsl')),
