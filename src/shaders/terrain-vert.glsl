@@ -5,6 +5,8 @@ uniform mat4 u_Model;
 uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane
+uniform vec3 u_VertexSpacing;  //the spacing between the points on the grid
+uniform float u_Time;   //Time (in terms of frames)
 
 in vec4 vs_Pos;
 in vec4 vs_Nor;

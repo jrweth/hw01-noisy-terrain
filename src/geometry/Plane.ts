@@ -17,6 +17,12 @@ class Plane extends Drawable {
     this.subdivs = subdivs + subdivs % 2; // Ensures the number is even, rounds up.
   }
 
+  getSubdivisionSpacing(): vec2 {
+    let width: number = Math.pow(2, this.subdivs / 2);
+    let normalize: number = 1.0 / width;
+    return vec2.fromValues(this.scale[0] * normalize, this.scale[1] * normalize);
+  }
+
   create() {
 
     let width: number = Math.pow(2, this.subdivs / 2);

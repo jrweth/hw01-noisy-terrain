@@ -1,4 +1,4 @@
-import {mat4, vec4} from 'gl-matrix';
+import {mat4, vec2, vec4} from 'gl-matrix';
 import Drawable from './Drawable';
 import Camera from '../../Camera';
 import {gl} from '../../globals';
@@ -6,6 +6,9 @@ import ShaderProgram from './ShaderProgram';
 
 // In this file, `gl` is accessible because it is imported above
 class OpenGLRenderer {
+  vertexSpacing: vec2;
+  time: number;
+
   constructor(public canvas: HTMLCanvasElement) {
   }
 
@@ -13,9 +16,17 @@ class OpenGLRenderer {
     gl.clearColor(r, g, b, a);
   }
 
+  setVertexSpacing(spacing: vec2) {
+    this.vertexSpacing = spacing;
+  }
+
   setSize(width: number, height: number) {
     this.canvas.width = width;
     this.canvas.height = height;
+  }
+
+  setTime(time: number) {
+    this.time = time;
   }
 
   clear() {
@@ -31,6 +42,8 @@ class OpenGLRenderer {
     mat4.multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
     prog.setModelMatrix(model);
     prog.setViewProjMatrix(viewProj);
+    prog.setVertexSpacing(this.vertexSpacing);
+    prog.setTime(this.time);
 
     for (let drawable of drawables) {
       prog.draw(drawable);

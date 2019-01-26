@@ -101,6 +101,7 @@ function main() {
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(164.0 / 255.0, 233.0 / 255.0, 1.0, 1);
   gl.enable(gl.DEPTH_TEST);
+  renderer.setVertexSpacing(plane.getSubdivisionSpacing());
 
   const lambert = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/terrain-vert.glsl')),
@@ -133,11 +134,13 @@ function main() {
   }
 
   // This function will be called every frame
+  let time = 0;
   function tick() {
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
+    renderer.setTime(time++);
     processKeyPresses();
     renderer.render(camera, lambert, [
       plane,
