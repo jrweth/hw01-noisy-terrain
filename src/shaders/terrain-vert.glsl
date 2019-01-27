@@ -5,8 +5,8 @@ uniform mat4 u_Model;
 uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane
-uniform vec2 u_VertexSpacing;  //the spacing between the points on the grid
 uniform float u_Time;   //Time (in terms of frames)
+uniform float u_SunSpeed;
 
 in vec4 vs_Pos;
 in vec4 vs_Nor;
@@ -34,6 +34,11 @@ vec2 random2( vec2 p , vec2 seed) {
 }
 
 
+//git the position of the sun / moon
+vec4 getLightPosition() {
+    float speed = u_Time * u_SunSpeed/ 600.0;
+    return vec4(cos(speed) * 1000.0, sin(speed) * 1000.0, -1000.0, 1.0);
+}
 
 float interpNoiseRandom2to1(vec2 p) {
     float fractX = fract(p.x);
@@ -133,7 +138,7 @@ void main()
 
   vec4 modelposition = vec4(vs_Pos.x, fs_Height * 2.0, vs_Pos.z, 1.0);
 
-  fs_LightVector = vs_LightPosition - modelposition;
+  fs_LightVector = getLightPosition() - modelposition;
   //vec4 modelposition = vec4(vs_Pos.x, vs_Pos.y, vs_Pos.z, 1.0);
   modelposition = u_Model * modelposition;
   gl_Position = u_ViewProj * modelposition;

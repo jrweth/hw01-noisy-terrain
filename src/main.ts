@@ -13,6 +13,7 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
+  'Sun Speed': 1.0,
 };
 
 let square: Square;
@@ -82,6 +83,7 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
+  gui.add(controls, 'Sun Speed', {'1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0});
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -106,8 +108,6 @@ function main() {
     new Shader(gl.VERTEX_SHADER, require('./shaders/terrain-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/terrain-frag.glsl')),
   ]);
-  console.log(plane.getSubdivisionSpacing());
-  lambert.setVertexSpacing(plane.getSubdivisionSpacing());
 
   const flat = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/flat-vert.glsl')),
@@ -142,6 +142,7 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     renderer.setTime(time++);
+    renderer.setSunSpeed(controls["Sun Speed"]);
     processKeyPresses();
     renderer.render(camera, lambert, [
       plane,

@@ -20,17 +20,17 @@ and updates the plane shader representing a 2D position
 - A square that spans the range [-1, 1] in X and Y that is rendered as the
 "background" of the scene
 
-###Starting Point - Sine Wave Terrain 
+### Starting Point - Sine Wave Terrain 
 The base project uses a 2D mapping of the plane coordinates to height using sine/cosine wave function.  The terrain 
 color brightness is then determined by same height field. 
 ![](img/startScene.png)
 
-###Using [Fractal Brownian Motion](https://en.wikipedia.org/wiki/Fractional_Brownian_motion) to Specify Height
+### Using [Fractal Brownian Motion](https://en.wikipedia.org/wiki/Fractional_Brownian_motion) to Specify Height
 The first adjustment was to replace the sine function with  [FBM](https://en.wikipedia.org/wiki/Fractional_Brownian_motion)
 to determine the vertex height in the vertex shader.  
 ![](img/fbm.png)
 
-###Using Height to determine elevation color
+### Using Height to determine elevation color
 To add more interest to the color, a few simple changes were made to the fragment shader in
 order to create elevation based coloration:
 - values of highest height were given snow color
@@ -38,12 +38,16 @@ order to create elevation based coloration:
 - values below waterline threshold were given water color and adjusted up to the waterline 
 ![](img/fbm_simple_color.png)
 
-###Determining Normals
+### Determining Normals
 In order to determine the normals which can be used by the fragment shader the normal at 
 each adjusted plane vertex needed to be determined.  This was done in the vertex shader by
-simply calculating the positions of the four neighboring vertex positions and averaging these
-to get the slope at the vertex in question.
+simply calculating the slope from neighboring points.  This also allowed lambert shading 
+based upon the position of the light source.
 ![](img/fbm_simple_color_normals.png)
+
+### Sun and Moon Transversal
+Since we had the normals calculated, we could now transverse the sun and moon over the sky and adjust the shading
+of the plane and the sky based on the sun/moon position.
 
 
 

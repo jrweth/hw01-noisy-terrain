@@ -30,7 +30,7 @@ class ShaderProgram {
   unifViewProj: WebGLUniformLocation;
   unifColor: WebGLUniformLocation;
   unifPlanePos: WebGLUniformLocation;
-  unifVertexSpacing: WebGLUniformLocation;
+  unifSunSpeed: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
@@ -51,7 +51,7 @@ class ShaderProgram {
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
     this.unifPlanePos      = gl.getUniformLocation(this.prog, "u_PlanePos");
-    this.unifVertexSpacing     = gl.getUniformLocation(this.prog, "u_VertexSpacing");
+    this.unifSunSpeed     = gl.getUniformLocation(this.prog, "u_SunSpeed");
     this.unifTime       = gl.getUniformLocation(this.prog, "u_Time");
   }
 
@@ -97,10 +97,10 @@ class ShaderProgram {
     }
   }
 
-  setVertexSpacing(spacing: vec2) {
+  setSunSpeed(speed: number) {
     this.use();
-    if (this.unifVertexSpacing !== -1) {
-      gl.uniform2fv(this.unifVertexSpacing, spacing);
+    if (this.unifSunSpeed !== -1) {
+      gl.uniform1f(this.unifSunSpeed, speed);
     }
   }
 
