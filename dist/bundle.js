@@ -5980,6 +5980,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 const controls = {
     tesselations: 5,
     'Load Scene': loadScene,
+    'Sun Speed': 1.0,
 };
 let square;
 let plane;
@@ -6042,6 +6043,7 @@ function main() {
     document.body.appendChild(stats.domElement);
     // Add controls to the gui
     const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
+    gui.add(controls, 'Sun Speed', { '1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0 });
     // get canvas and webgl context
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl2');
@@ -6053,7 +6055,7 @@ function main() {
     Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* setGL */])(gl);
     // Initial call to load scene
     loadScene();
-    const camera = new __WEBPACK_IMPORTED_MODULE_6__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 10, -20), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0));
+    const camera = new __WEBPACK_IMPORTED_MODULE_6__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(5.0, 10, -20), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(0, 0, 0));
     const renderer = new __WEBPACK_IMPORTED_MODULE_5__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
     renderer.setClearColor(164.0 / 255.0, 233.0 / 255.0, 1.0, 1);
     gl.enable(gl.DEPTH_TEST);
@@ -6085,11 +6087,14 @@ function main() {
         planePos = newPos;
     }
     // This function will be called every frame
+    let time = 0;
     function tick() {
         camera.update();
         stats.begin();
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         renderer.clear();
+        renderer.setTime(time++);
+        renderer.setSunSpeed(controls["Sun Speed"]);
         processKeyPresses();
         renderer.render(camera, lambert, [
             plane,
@@ -13168,6 +13173,11 @@ class Plane extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* 
         this.scale = scale;
         this.subdivs = subdivs + subdivs % 2; // Ensures the number is even, rounds up.
     }
+    getSubdivisionSpacing() {
+        let width = Math.pow(2, this.subdivs / 2);
+        let normalize = 1.0 / width;
+        return __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(this.scale[0] * normalize, this.scale[1] * normalize);
+    }
     create() {
         let width = Math.pow(2, this.subdivs / 2);
         let normalize = 1.0 / width;
@@ -13234,9 +13244,15 @@ class OpenGLRenderer {
     setClearColor(r, g, b, a) {
         __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].clearColor(r, g, b, a);
     }
+    setSunSpeed(speed) {
+        this.sunSpeed = speed;
+    }
     setSize(width, height) {
         this.canvas.width = width;
         this.canvas.height = height;
+    }
+    setTime(time) {
+        this.time = time;
     }
     clear() {
         __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].clear(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].COLOR_BUFFER_BIT | __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].DEPTH_BUFFER_BIT);
@@ -13249,6 +13265,8 @@ class OpenGLRenderer {
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat4 */].multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
         prog.setModelMatrix(model);
         prog.setViewProjMatrix(viewProj);
+        prog.setTime(this.time);
+        prog.setSunSpeed(this.sunSpeed);
         for (let drawable of drawables) {
             prog.draw(drawable);
         }
@@ -16405,6 +16423,8 @@ class ShaderProgram {
         this.unifModelInvTr = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ModelInvTr");
         this.unifViewProj = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ViewProj");
         this.unifPlanePos = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_PlanePos");
+        this.unifSunSpeed = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_SunSpeed");
+        this.unifTime = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Time");
     }
     use() {
         if (activeProgram !== this.prog) {
@@ -16430,10 +16450,22 @@ class ShaderProgram {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniformMatrix4fv(this.unifViewProj, false, vp);
         }
     }
+    setTime(time) {
+        this.use();
+        if (this.unifTime !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifTime, time);
+        }
+    }
     setPlanePos(pos) {
         this.use();
         if (this.unifPlanePos !== -1) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform2fv(this.unifPlanePos, pos);
+        }
+    }
+    setSunSpeed(speed) {
+        this.use();
+        if (this.unifSunSpeed !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifSunSpeed, speed);
         }
     }
     draw(d) {
@@ -16462,13 +16494,13 @@ class ShaderProgram {
 /* 69 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\n\n\nuniform mat4 u_Model;\nuniform mat4 u_ModelInvTr;\nuniform mat4 u_ViewProj;\nuniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane\n\nin vec4 vs_Pos;\nin vec4 vs_Nor;\nin vec4 vs_Col;\n\nout vec3 fs_Pos;\nout vec4 fs_Nor;\nout vec4 fs_Col;\n\nout float fs_Height;\n\n\nfloat noiseRandom2to1(vec2 p) {\n   return fract(sin(dot(p, vec2(123.2, 311.7)))*43758.5453);\n}\n\nfloat random1( vec2 p , vec2 seed) {\n  return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);\n}\n\nfloat random1( vec3 p , vec3 seed) {\n  return fract(sin(dot(p + seed, vec3(987.654, 123.456, 531.975))) * 85734.3545);\n}\n\nvec2 random2( vec2 p , vec2 seed) {\n  return fract(sin(vec2(dot(p + seed, vec2(311.7, 127.1)), dot(p + seed, vec2(269.5, 183.3)))) * 85734.3545);\n}\n\n\nfloat interpNoiseRandom2to1(vec2 p) {\n    float fractX = fract(p.x);\n    float x1 = floor(p.x);\n    float x2 = x1 + 1.0;\n\n    float fractY = fract(p.y);\n    float y1 = floor(p.y);\n    float y2 = y1 + 1.0;\n\n    float v1 = noiseRandom2to1(vec2(x1, y1));\n    float v2 = noiseRandom2to1(vec2(x2, y1));\n    float v3 = noiseRandom2to1(vec2(x1, y2));\n    float v4 = noiseRandom2to1(vec2(x2, y2));\n\n    float i1 = mix(v1, v2, fractX);\n    float i2 = mix(v3, v4, fractX);\n\n//    return smoothstep(i1, i2, fractY);\n    return mix(i1, i2, fractY);\n\n}\n\nfloat fbm2to1(vec2 p) {\n    float total  = 0.0;\n    float persistence = 0.5;\n    float octaves = 8.0;\n\n    for(float i = 0.0; i < octaves; i++) {\n        float freq = pow(2.0, i);\n        float amp = pow(persistence, i);\n        total = total + interpNoiseRandom2to1(vec2(p.x * freq, p.y * freq)) * amp;\n    }\n    return total;\n}\n\nvoid main()\n{\n  float sampling = 1.0;\n  fs_Pos = vs_Pos.xyz;\n  fs_Height = fbm2to1(vec2(vs_Pos.x + u_PlanePos.x, vs_Pos.z + u_PlanePos.y)/5.0)*2.0 - 1.0;\n\n\n  vec4 modelposition = vec4(vs_Pos.x, fs_Height * 2.0, vs_Pos.z, 1.0);\n  //vec4 modelposition = vec4(vs_Pos.x, vs_Pos.y, vs_Pos.z, 1.0);\n  modelposition = u_Model * modelposition;\n  gl_Position = u_ViewProj * modelposition;\n}\n"
+module.exports = "#version 300 es\n\n\nuniform mat4 u_Model;\nuniform mat4 u_ModelInvTr;\nuniform mat4 u_ViewProj;\nuniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane\nuniform float u_Time;   //Time (in terms of frames)\nuniform float u_SunSpeed;\n\nin vec4 vs_Pos;\nin vec4 vs_Nor;\nin vec4 vs_Col;\n\nout vec3 fs_Pos;\nout vec4 fs_Nor;\nout vec4 fs_Col;\nout vec4 fs_LightVector;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.\n\nout float fs_Height;\n\nconst vec4 vs_LightPosition = vec4(500.0, 50.0, 0.0, 0.0);\n\nfloat random1( vec2 p , vec2 seed) {\n  return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);\n}\n\nfloat random1( vec3 p , vec3 seed) {\n  return fract(sin(dot(p + seed, vec3(987.654, 123.456, 531.975))) * 85734.3545);\n}\n\nvec2 random2( vec2 p , vec2 seed) {\n  return fract(sin(vec2(dot(p + seed, vec2(311.7, 127.1)), dot(p + seed, vec2(269.5, 183.3)))) * 85734.3545);\n}\n\n\n//git the position of the sun / moon\nvec4 getLightPosition() {\n    float speed = u_Time * u_SunSpeed/ 600.0;\n    return vec4(cos(speed) * 1000.0, sin(speed) * 1000.0, -1000.0, 1.0);\n}\n\nfloat interpNoiseRandom2to1(vec2 p) {\n    float fractX = fract(p.x);\n    float x1 = floor(p.x);\n    float x2 = x1 + 1.0;\n\n    float fractY = fract(p.y);\n    float y1 = floor(p.y);\n    float y2 = y1 + 1.0;\n\n    float v1 = random1(vec2(x1, y1), vec2(1.1, 2.3));\n    float v2 = random1(vec2(x2, y1), vec2(1.1, 2.3));\n    float v3 = random1(vec2(x1, y2), vec2(1.1, 2.3));\n    float v4 = random1(vec2(x2, y2), vec2(1.1, 2.3));\n\n    float i1 = mix(v1, v2, fractX);\n    float i2 = mix(v3, v4, fractX);\n\n//    return smoothstep(i1, i2, fractY);\n    return mix(i1, i2, fractY);\n\n}\n\nfloat fbm2to1(vec2 p) {\n    float total  = 0.0;\n    float persistence = 0.5;\n    float octaves = 8.0;\n\n    for(float i = 0.0; i < octaves; i++) {\n        float freq = pow(2.0, i);\n        float amp = pow(persistence, i);\n        total = total + interpNoiseRandom2to1(vec2(p.x * freq, p.y * freq)) * amp;\n    }\n    return total;\n}\n\nfloat calcHeight(float x, float z) {\n\n    //return x*sin(u_Time/40.0);\n//    return 20.0 + sin(3.14159/2.0 + (x + u_PlanePos.x) * 3.14159/25.0) * 5.0\n//       + cos((z + u_PlanePos.y) * 3.14159 /25.0) * 5.0;\n   return fbm2to1(vec2(x + u_PlanePos.x, z + u_PlanePos.y)/5.0)*2.0 - 1.0;\n\n}\n\n/**\nCalculate the normal for each vertex by getting the height of the four\nsurrounding vertex and calculate the slope between them\n*/\nvec4 calcNormal() {\n\n    //get the normal for X direction\n    float xSpacing = 0.09765625;\n    float x1Height = calcHeight(vs_Pos.x - xSpacing, vs_Pos.z);\n    float x2Height = calcHeight(vs_Pos.x + xSpacing, vs_Pos.z);\n    float slopeXY = (x2Height - x1Height) / (xSpacing * 2.0);\n    vec4 normalXY;\n    if(slopeXY > 0.0) {\n        normalXY = vec4(-1.0, 1.0/slopeXY,  0.0, 0.0);\n    }\n    else if(slopeXY < 0.0) {\n        normalXY = vec4(1.0, -1.0/slopeXY,  0.0, 0.0);\n    }\n    else {\n        normalXY = vec4(0.0, 1.0, 0.0, 0.0);\n    }\n\n    //get the normal for the Z direction\n    float zSpacing = 0.09765625;\n    float z1Height = calcHeight(vs_Pos.x, vs_Pos.z - zSpacing);\n    float z2Height = calcHeight(vs_Pos.x, vs_Pos.z + zSpacing);\n    float slopeZY = (z2Height - z1Height) / (zSpacing * 2.0);\n    vec4 normalZY;\n\n    if(slopeZY > 0.0) {\n        normalZY = vec4(0.0, 1.0/slopeZY,  -1.0, 0.0);\n    }\n    else if(slopeZY < 0.0) {\n        normalZY = vec4(0.0, -1.0/slopeZY,  1.0, 0.0);\n    }\n    else {\n        normalZY = vec4(0.0, 1.0, 0.0, 0.0);\n    }\n    //return vec4(0.0,1.0,0.0,1.0);\n    return normalXY;\n\n    return normalXY + normalZY;\n}\n\nvoid main()\n{\n  float sampling = 1.0;\n  fs_Pos = vs_Pos.xyz;\n  fs_Height = calcHeight(vs_Pos.x, vs_Pos.z);\n  fs_Nor = calcNormal();\n\n\n  vec4 modelposition = vec4(vs_Pos.x, fs_Height * 2.0, vs_Pos.z, 1.0);\n\n  fs_LightVector = getLightPosition() - modelposition;\n  //vec4 modelposition = vec4(vs_Pos.x, vs_Pos.y, vs_Pos.z, 1.0);\n  modelposition = u_Model * modelposition;\n  gl_Position = u_ViewProj * modelposition;\n}\n"
 
 /***/ }),
 /* 70 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\nprecision highp float;\n\nuniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane\n\nin vec3 fs_Pos;\nin vec4 fs_Nor;\nin vec4 fs_Col;\n\nin float fs_Height;\n\nout vec4 out_Col; // This is the final output color that you will see on your\n                  // screen for the pixel that is currently being processed.\n\nvoid main()\n{\n    vec3 backgroundColor = vec3(164.0 / 255.0, 233.0 / 255.0, 1.0);\n    vec3 terrainColor;\n    vec3 landColor = vec3(1.0, 0.5, 0.25) * fs_Height/2.0;\n    vec3 oceanColor = vec3(0.0, 0.0, 1.0);\n    vec3 snowColor = vec3(1.0, 1.0, 1.0) * fs_Height/2.0;;\n    if(fs_Height <= 0.5) terrainColor = oceanColor;\n    if(fs_Height > 0.5 && fs_Height < 1.8) terrainColor = landColor;\n    if(fs_Height >= 1.80)  terrainColor = snowColor;\n\n    float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog\n    out_Col = vec4(mix(terrainColor, backgroundColor, t), 1.0);\n    //out_Col = vec4(heightColor, 1.0);\n}\n"
+module.exports = "#version 300 es\nprecision highp float;\n\nuniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane\nuniform float u_Time;\nuniform float u_SunSpeed;\n\nin vec3 fs_Pos;\nin vec4 fs_Nor;\nin vec4 fs_Col;\nin vec4 fs_LightVector;\n\nin float fs_Height;\n\nout vec4 out_Col; // This is the final output color that you will see on your\n                  // screen for the pixel that is currently being processed.\n\nvec4 getSkyColor() {\n   vec4 dayColor =   vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);\n   vec4 nightColor =  vec4(0.05, 0.0, 0.2, 1.0);\n   float time = clamp(0.0, 1.0, sin(u_Time * u_SunSpeed/ 600.0) + 0.9);\n   return mix(nightColor, dayColor, time);\n}\n\nvoid main()\n{\n    vec4 normal = fs_Nor;\n    vec4 terrainColor;\n    vec4 landColor  = vec4(1.0, 0.5, 0.25, 1.0);\n    vec4 oceanColor = vec4(0.0, 0.0, 1.0, 1.0);\n    vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);\n    if(fs_Height <= 0.5) {terrainColor = oceanColor; normal = vec4(0.0, 1.0, 0.0, 1.0);}\n    if(fs_Height > 0.5 && fs_Height < 1.8) terrainColor = landColor;\n    if(fs_Height >= 1.80)  terrainColor = snowColor;\n\n    // Calculate the diffuse term for Lambert shading\n    float sunDiffuseTerm = dot(normalize(normal.xyz), normalize(fs_LightVector.xyz));\n    vec4 diffuseColor;\n\n    //sunlight\n    if(sunDiffuseTerm > 0.0) {\n        float ambientTerm = 0.2;\n        float sunIntensity = sunDiffuseTerm + ambientTerm;   //Add a small float value to the color multiplier\n        diffuseColor = vec4(terrainColor.rgb * sunIntensity, terrainColor.a);\n    }\n    //moonlight\n    else{\n        float moonDiffuseTerm = dot(normalize(normal.xyz), normalize(vec3(-1.0 * fs_LightVector.x, -1.0*fs_LightVector.y, fs_LightVector.z)));\n        float ambientTerm = 0.0;\n        float moonIntensity = moonDiffuseTerm*2.0 + ambientTerm;   //Add a small float value to the color multiplier\n        if(moonIntensity < 1.2) {\n            diffuseColor = vec4(0,0,0,1);\n        }\n        else {\n            diffuseColor = vec4(terrainColor.rgb * 0.08 + vec3(1.0, 1.0, 1.0) * moonIntensity, terrainColor.a) - vec4(1.0, 1.0, 1.0, 0.0);\n        }\n    }\n\n    //make sure normals are correct for ocean\n    if(fs_Height <= 0.5) diffuseColor = oceanColor;\n\n    float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog\n    out_Col = vec4(mix(diffuseColor, getSkyColor(), t));\n}\n"
 
 /***/ }),
 /* 71 */
@@ -16480,7 +16512,7 @@ module.exports = "#version 300 es\nprecision highp float;\n\n// The vertex shade
 /* 72 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\nprecision highp float;\n\n// The fragment shader used to render the background of the scene\n// Modify this to make your background more interesting\n\nout vec4 out_Col;\n\nvoid main() {\n  out_Col = vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);\n}\n"
+module.exports = "#version 300 es\nprecision highp float;\n\n// The fragment shader used to render the background of the scene\n// Modify this to make your background more interesting\nuniform float u_Time;\nuniform float u_SunSpeed;\n\nout vec4 out_Col;\n\nvec4 getSkyColor() {\n   vec4 dayColor =   vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);\n   vec4 nightColor =  vec4(0.05, 0.0, 0.2, 1.0);\n   float time = clamp(0.0, 1.0, sin(u_Time * u_SunSpeed/ 600.0) + 0.9);\n   return mix(nightColor, dayColor, time);\n}\n\nvoid main() {\n    out_Col = getSkyColor();\n}\n"
 
 /***/ })
 /******/ ]);
