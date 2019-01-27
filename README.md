@@ -48,6 +48,7 @@ based upon the position of the light source.
 ### Sun and Moon Transversal
 Since we had the normals calculated, we could now transverse the sun and moon over the sky and adjust the shading
 of the plane and the sky based on the sun/moon position.
+![](img/nighttime.png)
 
 
 
