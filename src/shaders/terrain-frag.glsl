@@ -25,9 +25,7 @@ void main()
     if(fs_Height >= 1.80)  terrainColor = snowColor;
 
     // Calculate the diffuse term for Lambert shading
-    float diffuseTerm = dot(normalize(fs_Nor.xyz), normalize(fs_LightVector.xyz));
-    // Avoid negative lighting values
-    //diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);
+    float diffuseTerm = dot(normalize(fs_Nor.xyz), normalize(fs_LightVector.xyz))*2.0;
 
     float ambientTerm = 0.1;
 
@@ -42,8 +40,4 @@ void main()
 
     float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog
     out_Col = vec4(mix(diffuseColor, backgroundColor, t));
-    //out_Col = vec4(normalize(fs_Nor.xyz), 1.0);
-    //out_Col = vec4(diffuseColor);
-
-    //out_Col = vec4(heightColor, 1.0);
 }
