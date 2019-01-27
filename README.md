@@ -43,7 +43,7 @@ In order to determine the normals which can be used by the fragment shader the n
 each adjusted plane vertex needed to be determined.  This was done in the vertex shader by
 simply calculating the positions of the four neighboring vertex positions and averaging these
 to get the slope at the vertex in question.
-
+![](img/fbm_simple_color_normals.png)
 
 
 
