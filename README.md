@@ -26,8 +26,8 @@ color brightness is then determined by same height field.
 ![](img/startScene.png)
 
 ### Using [Fractal Brownian Motion](https://en.wikipedia.org/wiki/Fractional_Brownian_motion) to Specify Height
-The first adjustment was to replace the sine function with  [FBM](https://en.wikipedia.org/wiki/Fractional_Brownian_motion)
-to determine the vertex height in the vertex shader.  
+The first adjustment was to replace the sine/cosine height function with a height function based upon [FBM](https://en.wikipedia.org/wiki/Fractional_Brownian_motion)
+in the vertex shader.  Samples were taken iteratively 8 times adjusting the sample length by 50% for each iteration.
 ![](img/fbm.png)
 
 ### Using Height to determine elevation color
@@ -35,22 +35,29 @@ To add more interest to the color, a few simple changes were made to the fragmen
 order to create elevation based coloration:
 - values of highest height were given snow color
 - values of medium height were given rock color
-- values below waterline threshold were given water color and adjusted up to the waterline 
+- values of low height were given water color and the height was adjusted up to the waterline 
 ![](img/fbm_simple_color.png)
 
 ### Determining Normals
-In order to determine the normals which can be used by the fragment shader the normal at 
+In order to determine the normals which to be used by the fragment shader the normal at 
 each adjusted plane vertex needed to be determined.  This was done in the vertex shader by
-simply calculating the slope from neighboring points.  This also allowed lambert shading 
-based upon the position of the light source.
+simply calculating the gradient from four neighboring points.  The normal value was then passed to the fragment
+shader which used the position of the light source (sun) to adjust the color value via [lambert shading](https://en.wikipedia.org/wiki/Lambertian_reflectance).
 ![](img/fbm_simple_color_normals.png)
 
-### Sun and Moon Transversal
-Since we had the normals calculated, we could now transverse the sun and moon over the sky and adjust the shading
-of the plane and the sky based on the sun/moon position.
-![](img/nighttime:.png)
+### Sun and Moon Transversal 
+Since the lambert shading developed in the previous step was based upon the light position, it was then possible to modify this position
+over time to create the effect of the sun transversing across the sky over time.  Therefore a uniform time value
+was added to the shader program so that the sun position could be calculated.   During the night the base color value was 
+adjusted to be nearly grey scale to simulate the moon transversal.  The background color was also adjust to simulate night time.
+![](img/nighttime.png)
 
-
+### Separating Terrain into Biomes using [Worley Noise](https://en.wikipedia.org/wiki/Worley_noise)
+The next step is to separate terrain into biomes.  This was accomplished by dividing the plane up into a grid, assigning
+a random point to each grid, and the using the technique of Worley noise to divide up the plane.
+![](img/worley.png)
+The worley noise map can then be combined with the height terrain to eventually create separate biomes.
+![](img/worley_terrain.png)
 
 
 

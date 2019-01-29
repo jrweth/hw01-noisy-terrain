@@ -34,6 +34,47 @@ vec2 random2( vec2 p , vec2 seed) {
 }
 
 
+//get the grid position of the lower corner for the given position
+vec2 getGridSection2d(vec2 pos, float gridSize) {
+   return pos - mod(pos, gridSize);
+}
+
+/*
+Determine worley noise for given position and grid size
+- param vec2 pos :      the position to test for
+- param vec2 gridSize:  the size of the grid
+- param vec2 seed:       the random seed
+- return vec2:          the location of the closest worley point
+*/
+vec2 getClosestWorleyPoint2d(vec2 pos, vec2 gridSize, vec2 seed) {
+    vec2 centerGridPos = pos - mod(pos, gridSize);  //the corner of the grid in which this point resides
+    vec2 closestWorleyPoint = vec2(1.0, 1.0);
+    float closestDistance = (gridSize.x + gridSize.y) * 2.0;
+
+    vec2 currentGridPos;
+    vec2 currentWorleyPoint;
+    float currentDistance;
+    //loop through the 9 grid sections surrouding this one to find the closes worley point
+    for(float gridX = -1.0; gridX <= 1.0; gridX += 1.0) {
+        for(float gridY = -1.0; gridY <= 1.0; gridY += 1.0) {
+            currentGridPos = centerGridPos + vec2(gridX, gridY) * gridSize;
+            currentWorleyPoint = currentGridPos + random2(currentGridPos, seed) * gridSize;
+            currentDistance = length(currentWorleyPoint - pos);
+            if(currentDistance < closestDistance) {
+                closestDistance = currentDistance;
+                closestWorleyPoint = currentWorleyPoint;
+            }
+        }
+    }
+
+    return closestWorleyPoint;
+}
+
+float getWorleyNoise2d(vec2 pos, vec2 gridSize, vec2 seed) {
+    vec2 wPoint = getClosestWorleyPoint2d(pos, gridSize, seed);
+    return length(wPoint - pos) / length(gridSize);
+}
+
 //git the position of the sun / moon
 vec4 getLightPosition() {
     float speed = u_Time * u_SunSpeed/ 600.0;
@@ -75,12 +116,12 @@ float fbm2to1(vec2 p) {
     return total;
 }
 
-float calcHeight(float x, float z) {
+float calcHeight(vec2 pos) {
 
     //return x*sin(u_Time/40.0);
 //    return 20.0 + sin(3.14159/2.0 + (x + u_PlanePos.x) * 3.14159/25.0) * 5.0
 //       + cos((z + u_PlanePos.y) * 3.14159 /25.0) * 5.0;
-   return fbm2to1(vec2(x + u_PlanePos.x, z + u_PlanePos.y)/5.0)*2.0 - 1.0;
+   return fbm2to1((pos + u_PlanePos)/5.0)*2.0 - 1.0;
 
 }
 
@@ -92,8 +133,8 @@ vec4 calcNormal() {
 
     //get the normal for X direction
     float xSpacing = 0.09765625;
-    float x1Height = calcHeight(vs_Pos.x - xSpacing, vs_Pos.z);
-    float x2Height = calcHeight(vs_Pos.x + xSpacing, vs_Pos.z);
+    float x1Height = calcHeight(vec2(vs_Pos.x - xSpacing, vs_Pos.z));
+    float x2Height = calcHeight(vec2(vs_Pos.x + xSpacing, vs_Pos.z));
     float slopeXY = (x2Height - x1Height) / (xSpacing * 2.0);
     vec4 normalXY;
     if(slopeXY > 0.0) {
@@ -108,8 +149,8 @@ vec4 calcNormal() {
 
     //get the normal for the Z direction
     float zSpacing = 0.09765625;
-    float z1Height = calcHeight(vs_Pos.x, vs_Pos.z - zSpacing);
-    float z2Height = calcHeight(vs_Pos.x, vs_Pos.z + zSpacing);
+    float z1Height = calcHeight(vec2(vs_Pos.x, vs_Pos.z - zSpacing));
+    float z2Height = calcHeight(vec2(vs_Pos.x, vs_Pos.z + zSpacing));
     float slopeZY = (z2Height - z1Height) / (zSpacing * 2.0);
     vec4 normalZY;
 
@@ -132,14 +173,30 @@ void main()
 {
   float sampling = 1.0;
   fs_Pos = vs_Pos.xyz;
-  fs_Height = calcHeight(vs_Pos.x, vs_Pos.z);
+  fs_Height = calcHeight(vs_Pos.xz);
   fs_Nor = calcNormal();
 
+  //vec4 modelposition = vec4(vs_Pos.x, fs_Height * 2.0, vs_Pos.z, 1.0);
+  vec4 modelposition = vec4(vs_Pos.x, calcHeight(vs_Pos.xz), vs_Pos.z, 1.0);
 
-  vec4 modelposition = vec4(vs_Pos.x, fs_Height * 2.0, vs_Pos.z, 1.0);
+  vec2 biomeGridSize = vec2(20.0, 20.0);
+
+  //set the color based upon worley noise
+  vec2 closestWorleyPoint = getClosestWorleyPoint2d(vs_Pos.xz, biomeGridSize, vec2(1.0, 2.0));
+
+  //use worley noise to get base biome color
+  fs_Col = vec4(
+      vec3(
+          random1(closestWorleyPoint.xy, vec2(1.0)),
+          random1(closestWorleyPoint.xy, vec2(2.0)),
+          random1(closestWorleyPoint.xy, vec2(3.0))
+      ) * 2.0 * getWorleyNoise2d(vs_Pos.xz, biomeGridSize, vec2(1.0, 2.0)),
+      1.0
+  );
 
   fs_LightVector = getLightPosition() - modelposition;
   //vec4 modelposition = vec4(vs_Pos.x, vs_Pos.y, vs_Pos.z, 1.0);
   modelposition = u_Model * modelposition;
   gl_Position = u_ViewProj * modelposition;
+
 }

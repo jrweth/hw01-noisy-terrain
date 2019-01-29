@@ -15,6 +15,18 @@ in float fs_Height;
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
+float random1( vec2 p , vec2 seed) {
+  return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float random1( vec3 p , vec3 seed) {
+  return fract(sin(dot(p + seed, vec3(987.654, 123.456, 531.975))) * 85734.3545);
+}
+
+vec2 random2( vec2 p , vec2 seed) {
+  return fract(sin(vec2(dot(p + seed, vec2(311.7, 127.1)), dot(p + seed, vec2(269.5, 183.3)))) * 85734.3545);
+}
+
 vec4 getSkyColor() {
    vec4 dayColor =   vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);
    vec4 nightColor =  vec4(0.05, 0.0, 0.2, 1.0);
@@ -37,27 +49,32 @@ void main()
     float sunDiffuseTerm = dot(normalize(normal.xyz), normalize(fs_LightVector.xyz));
     vec4 diffuseColor;
 
+    //make sure normals are correct for ocean
+    if(fs_Height <= 0.5) diffuseColor = oceanColor;
+
     //sunlight
     if(sunDiffuseTerm > 0.0) {
         float ambientTerm = 0.2;
-        float sunIntensity = sunDiffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+        float sunIntensity = clamp(0.1, 1.0, sunDiffuseTerm + ambientTerm);   //Add a small float value to the color multiplier
         diffuseColor = vec4(terrainColor.rgb * sunIntensity, terrainColor.a);
     }
     //moonlight
     else{
         float moonDiffuseTerm = dot(normalize(normal.xyz), normalize(vec3(-1.0 * fs_LightVector.x, -1.0*fs_LightVector.y, fs_LightVector.z)));
-        float ambientTerm = 0.0;
+        float ambientTerm = 0.1;
         float moonIntensity = moonDiffuseTerm*2.0 + ambientTerm;   //Add a small float value to the color multiplier
         if(moonIntensity < 1.2) {
-            diffuseColor = vec4(0,0,0,1);
+            diffuseColor = vec4(0.1,0.1,0.1,1.0);
         }
         else {
             diffuseColor = vec4(terrainColor.rgb * 0.08 + vec3(1.0, 1.0, 1.0) * moonIntensity, terrainColor.a) - vec4(1.0, 1.0, 1.0, 0.0);
         }
     }
 
-    //make sure normals are correct for ocean
-    if(fs_Height <= 0.5) diffuseColor = oceanColor;
+
+    //mix the diffuse color with the color coming from the shader
+    diffuseColor = mix(diffuseColor, fs_Col, 0.3);
+
 
     float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog
     out_Col = vec4(mix(diffuseColor, getSkyColor(), t));
