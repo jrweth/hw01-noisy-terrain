@@ -83,7 +83,7 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
-  gui.add(controls, 'Sun Speed', {'1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0});
+  gui.add(controls, 'Sun Speed', {'0': 0.0, '1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0});
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -142,7 +142,6 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     renderer.setTime(time++);
-    renderer.setTime(500);
     renderer.setSunSpeed(controls["Sun Speed"]);
     processKeyPresses();
     renderer.render(camera, lambert, [

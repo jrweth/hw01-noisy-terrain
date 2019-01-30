@@ -80,7 +80,7 @@ float getWorleyNoise2d(vec2 pos, vec2 gridSize, vec2 seed) {
 //git the position of the sun / moon
 vec4 getLightPosition() {
     float speed = u_Time * u_SunSpeed/ 600.0;
-    return vec4(cos(speed) * 1000.0, sin(speed) * 1000.0, -1000.0, 1.0);
+    return vec4(cos(speed+1.3) * 1000.0, sin(speed+1.3) * 1000.0, -1000.0, 1.0);
 }
 
 float interpNoiseRandom2to1(vec2 p, vec2 seed) {
@@ -112,8 +112,8 @@ float fbm2to1(vec2 p, vec2 seed) {
 
     for(float i = 0.0; i < octaves; i++) {
         float freq = pow(2.0, i);
-        float amp = pow(persistence, i);
-        total = total + interpNoiseRandom2to1(vec2(p.x * freq, p.y * freq), seed) * amp;
+        float amp = pow(persistence, i+1.0);
+        total = total + interpNoiseRandom2to1(p * freq, seed) * amp;
     }
     return total;
 }
@@ -136,7 +136,32 @@ float calcFarmLandHeight(vec2 pos) {
 }
 
 float calcMountainHeight(vec2 pos) {
-    return fbm2to1(pos, vec2(1.0,2.0));
+    float fNoise = fbm2to1(pos, vec2(1,2));
+    float wNoise = getWorleyNoise2d(pos*3.0, vec2(20.0, 20.0), vec2(1,2));
+    wNoise = clamp(pow(wNoise + 0.4, 2.0),0.0, 1.0);
+    float noise = mix(fNoise, wNoise, 0.7);
+    return 0.5 + pow(noise, 3.0) * 3.0;
+}
+
+vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
+    //adjust the height a bit so we don't get striation
+    float adjHeight = height + fbm2to1(pos*5.1, vec2(3,4)) * 0.6 - 0.6;
+    //return vec4(vec3(height), 1.0);
+    vec4 terrainColor;
+    vec4 rockColor1 = vec4(1.0, 0.5, 0.25, 1.0);
+    vec4 rockColor2 = vec4(0.2, 0.2, 0.2, 1.0);
+    vec4 treeColor = vec4(0.0, 0.3, 0.0, 1.0);
+    vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);
+    if(adjHeight< 0.4) {
+        terrainColor = treeColor;
+    }
+    else if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
+        terrainColor = mix(rockColor1, rockColor2, fbm2to1(pos, vec2(4,3)));
+    }
+    else {
+        terrainColor = snowColor;
+    }
+    return terrainColor;
 }
 
 float calcForrestHeight(vec2 pos) {
@@ -218,23 +243,17 @@ vec3 calcBiome(vec2 pos) {
 Calculate the normal for each vertex by getting the height of the four
 surrounding vertex and calculate the slope between them
 */
-vec4 calcNormal(vec2 pos) {
+vec4 calcNormal(vec2 pos, vec3 biome) {
 
-     //USE CROSS PRODUCT STUPID!!!!!!!
+    //get the four surrounding points
+    float sampleDistance = 0.1;
+    vec3 x1 = vec3(pos.x, calcHeight(pos - vec2(0.0, sampleDistance), biome), pos.y - sampleDistance);
+    vec3 x2 = vec3(pos.x, calcHeight(pos + vec2(0.0, sampleDistance), biome), pos.y + sampleDistance);
 
-    //get the normal for X direction
-    float xSpacing = 0.09765625;
-//    float x1Height = calcHeight(vec2(pos.x - xSpacing, pos.y));
-//    float x2Height = calcHeight(vec2(pos.x + xSpacing, pos.y));
-//    float slopeXY = (x2Height - x1Height) / (xSpacing * 2.0);
-//
-//    //get the normal for the Z direction
-//    float zSpacing = 0.09765625;
-//    float z1Height = calcHeight(vec2(pos.x, pos.y - zSpacing));
-//    float z2Height = calcHeight(vec2(pos.x, pos.y + zSpacing));
-//    float slopeZY = (z2Height - z1Height) / (zSpacing * 2.0);
+    vec3 y1 = vec3(pos.x - sampleDistance, calcHeight(pos - vec2(sampleDistance, 0.0), biome), pos.y);
+    vec3 y2 = vec3(pos.x + sampleDistance, calcHeight(pos + vec2(sampleDistance, 0.0), biome), pos.y);
 
-    return vec4(0.0, 1.0, 0.0, 0.0);
+    return vec4(normalize(cross(x1-x2, y1-y2)), 1.0);
 
 }
 
@@ -255,9 +274,6 @@ vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
     return vec4(.9, 0.9, 0.1, 1.0);
 }
 
-vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
-    return vec4(vec3(0.9, 0.75, 0.60) * height, 1.0);
-}
 
 vec4 calcForrestColor(vec2 pos, float height, vec4 normal) {
     return vec4(0.0, 0.45, 0.05, 1.0);
@@ -320,7 +336,7 @@ void main()
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
-  fs_Nor = calcNormal(worldPlanePos);
+  fs_Nor = calcNormal(worldPlanePos, fs_Biome);
   fs_Col = calcColor(worldPlanePos, fs_Biome, fs_Height, fs_Nor);
 
   vec4 modelposition = vec4(vs_Pos.x, fs_Height, vs_Pos.z, 1.0);
