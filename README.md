@@ -60,5 +60,25 @@ The worley noise map can then be combined with the height terrain to eventually 
 ![](img/worley_terrain.png)
 
 
+### Criteria for selecting Biome type
+- elevation
+- moisture
+- erosion
+
+Biomes:
+- Islands (low elevation, high moisture, high erosion) 
+- Farm Lands (low elevation, high moisture, low erosion)
+- Dessert (low elevation, low moisture, high erosion)
+- Monument Valley (low elevation , low moisture, low erosion)
+
+- Foothills (high elevation, high moisture, high erosion)
+- Forrest (high elevation, high moisture, low erosion)
+- Mountain (high elevation, low moisture, low erosion)
+- Canyons (high elevation , low moisture, high erosion)
+
+
+
+
+
 
 

@@ -142,6 +142,7 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     renderer.setTime(time++);
+    renderer.setTime(500);
     renderer.setSunSpeed(controls["Sun Speed"]);
     processKeyPresses();
     renderer.render(camera, lambert, [

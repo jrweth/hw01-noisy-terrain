@@ -78,4 +78,5 @@ void main()
 
     float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog
     out_Col = vec4(mix(diffuseColor, getSkyColor(), t));
+    out_Col = fs_Col;
 }
