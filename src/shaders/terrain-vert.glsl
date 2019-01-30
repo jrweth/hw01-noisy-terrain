@@ -177,7 +177,7 @@ float calcFoothillsHeight(vec2 pos) {
 }
 
 float calcHeight(vec2 pos, vec3 biome) {
-    return calcMountainHeight(pos);
+//    return calcMountainHeight(pos);
        //low elevations
        if(biome[0] < 0.5) {
           //low moisture
@@ -196,7 +196,7 @@ float calcHeight(vec2 pos, vec3 biome) {
           }
        }
        //high elevations
-       if(biome[0] >- 0.5) {
+       if(biome[0] >= 0.5) {
           //low moisture
           if(biome[1] < 0.5) {
              //low erosion
@@ -225,17 +225,16 @@ Calcuate the biome based upon the closest worley poing
 vec3 calcBiome(vec2 pos) {
 
     vec3 biome;
-    float biomeSize = 100.0;
+    float biomeSize = 10.0;
     vec2 worleyGridSize = vec2(40.0, 40.0);
 
     //set the biome based upon the noise values at the nearest worley point
     vec2 closestWorleyPoint = getClosestWorleyPoint2d(pos, worleyGridSize, vec2(1.0, 2.0));
 
     //get the elevation/moisture and erosion values
-    biome[0] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(1.0, 2.0)));
-    biome[1] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(2.0, 3.0)));
-    biome[2] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(3.0, 4.0)));
-
+    biome[0] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(1.0, 2.0)) + 0.5);
+    biome[1] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(2.0, 3.0)) + 0.5);
+    biome[2] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(3.0, 4.0)) + 0.5);
     return biome;
 }
 
@@ -289,7 +288,6 @@ vec4 calcFoothillsColor(vec2 pos, float height, vec4 normal) {
 
 
 vec4 calcColor(vec2 pos, vec3 biome, float height, vec4 normal) {
-    return calcMountainColor(pos, height, normal);
     //low elevations
     if(biome[0] < 0.5) {
        //low moisture
@@ -335,6 +333,7 @@ void main()
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
+  //fs_Biome = vec3(1.0, 0.0, 0.0);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
   fs_Nor = calcNormal(worldPlanePos, fs_Biome);
   fs_Col = calcColor(worldPlanePos, fs_Biome, fs_Height, fs_Nor);
