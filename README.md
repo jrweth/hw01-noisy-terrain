@@ -107,6 +107,16 @@ The Mountain Biome adjusted the simple mountains already created and adjusted th
    sections by using FBM, then make the grass sparse by using another FBM to
    mix it with the underlying color
  ![](img/biome_monument.png)  
+ 
+ 
+ ### Canyon Biome
+ - Terrain Height
+   - Done very similarly to Monument Vally height but the value where the slope occurs was adjusted: 
+   `0.5 + smoothstep(0.4, 0.5, noise)*4.0 + pow(clamp(0.0,1.0,noise + 0.6), 10.0)`
+   - Water level was implemented so any height below water line was moved up to the water line
+ - Terrain Color
+   - Used Monument Valley color but added water coloring
+ ![](img/biome_canyon.png)  
   ` 
    
 

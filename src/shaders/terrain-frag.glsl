@@ -180,6 +180,7 @@ vec4 calcMonumentValleyColor(vec2 pos, float height, vec4 normal) {
 }
 
 vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
+   height = height - 4.0;
 
     float sunHeight = normalize(fs_LightVector).y;
     //adjust the height a bit so we don't get striation
@@ -207,7 +208,34 @@ vec4 calcIslandColor(vec2 pos, float height, vec4 normal) {
 }
 
 vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
-    return vec4(.9, 0.9, 0.1, 1.0);
+
+    //color the road
+    if(height < 0.18) {
+        vec4 roadColor1 = vec4(0.490, 0.325, 0.027, 1.0);
+        vec4 roadColor2 = vec4(0.247, 0.176, 0.054, 1.0);
+        return mix(roadColor1, roadColor2, fbm2to1(pos, vec2(1,2)));
+    }
+
+    //get a random value for the field
+    vec2 wPoint = getClosestWorleyPoint2d(pos, vec2(10.0, 10.0), vec2(3,2));
+    float fieldRandom = random1(wPoint, vec2(1,0));
+    vec4 cropColor = vec4(1.0);
+
+    //pick a crop type
+    //wheet
+    if(fieldRandom < 0.3) {
+        cropColor = vec4(0.094, 0.478, 0.043, 1.0);
+    }
+    else if(fieldRandom < 0.6) {
+        cropColor = vec4(0.776, 0.662, 0.462, 1.0);
+    }
+    //corn
+    else {
+        cropColor = vec4(0.776, 0.776, 0.462, 1.0);
+    }
+    //grass
+
+    return mix(cropColor, vec4(vec3(0.0), 1.0), 0.5 * fbm2to1(vec2(pos.y, pos.y), vec2(1,2)));
 }
 
 
@@ -216,7 +244,18 @@ vec4 calcForrestColor(vec2 pos, float height, vec4 normal) {
 }
 
 vec4 calcCanyonColor(vec2 pos, float height, vec4 normal) {
-    return vec4(.65, .28, 0.20, 1.0);
+    vec4 color = calcMonumentValleyColor(pos, height, normal);
+
+    //add some water
+    if(height <= 1.0) {
+        vec4 water1 = vec4(0.745, 0.921, 0.976, 1.0);
+        vec4 water2 = vec4(0.133, 0.529, 0.647, 1.0);
+
+        vec4 water = mix(water1, water2, fbm2to1(pos*0.4, vec2(3.43, 343.2)));
+        color = water;
+
+    }
+    return color;
 }
 
 vec4 calcFoothillsColor(vec2 pos, float height, vec4 normal) {

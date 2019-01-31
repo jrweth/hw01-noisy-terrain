@@ -72,6 +72,48 @@ vec2 getClosestWorleyPoint2d(vec2 pos, vec2 gridSize, vec2 seed) {
     return closestWorleyPoint;
 }
 
+vec2 getNextWorleyPoint2d(vec2 pos, vec2 gridSize, vec2 seed) {
+    vec2 centerGridPos = pos - mod(pos, gridSize);  //the corner of the grid in which this point resides
+    vec2 closestWorleyPoint = vec2(1.0, 1.0);
+    vec2 nextWorleyPoint = vec2(1.0, 1.0);
+    float closestDistance = (gridSize.x + gridSize.y) * 2.0;
+    float nextDistance = (gridSize.x + gridSize.y) * 2.0;
+
+    vec2 currentGridPos;
+    vec2 currentWorleyPoint;
+    float currentDistance;
+    //loop through the 9 grid sections surrouding this one to find the closes worley point
+    for(float gridX = -1.0; gridX <= 1.0; gridX += 1.0) {
+        for(float gridY = -1.0; gridY <= 1.0; gridY += 1.0) {
+            currentGridPos = centerGridPos + vec2(gridX, gridY) * gridSize;
+            currentWorleyPoint = currentGridPos + random2(currentGridPos, seed) * gridSize;
+            currentDistance = length(currentWorleyPoint - pos);
+            if(currentDistance < closestDistance) {
+                nextDistance = closestDistance;
+                nextWorleyPoint = closestWorleyPoint;
+                closestDistance = currentDistance;
+                closestWorleyPoint = currentWorleyPoint;
+            }
+            else if (currentDistance < nextDistance) {
+                nextDistance = currentDistance;
+                nextWorleyPoint = currentWorleyPoint;
+            }
+        }
+    }
+
+    return nextWorleyPoint;
+}
+
+float onWorleyBoundary(vec2 pos, vec2 gridSize, float boundarySize, vec2 seed) {
+    vec2 wPoint = getClosestWorleyPoint2d(pos, gridSize, seed);
+    vec2 nextWPoint = getNextWorleyPoint2d(pos, gridSize, seed);
+
+    float dist1 = length(pos - wPoint);
+    float dist2 = length(pos - nextWPoint);
+
+    return clamp((boundarySize - abs(dist1 -dist2)) / boundarySize, 0.0, 1.0 );
+}
+
 float getWorleyNoise2d(vec2 pos, vec2 gridSize, vec2 seed) {
     vec2 wPoint = getClosestWorleyPoint2d(pos, gridSize, seed);
     return length(wPoint - pos) / length(gridSize);
@@ -137,7 +179,15 @@ float calcIslandHeight(vec2 pos) {
 }
 
 float calcFarmLandHeight(vec2 pos) {
-    return 0.0;
+    float height = 0.3 + fbm2to1(pos*0.1, vec2(10.0, 10.0))*0.1 ;
+    float onBoundary = onWorleyBoundary(pos, vec2(10.0, 10.0), 1.0, vec2(3,2));
+    if(onBoundary > 0.0) {
+        height = 0.3 -smoothstep(.3, .7, onBoundary) * 0.2;
+//        if(onBoundary > 0.9)
+//        height -= onBoundary * 0.05;
+    }
+
+    return height;
 }
 
 float calcMountainHeight(vec2 pos) {
@@ -145,7 +195,7 @@ float calcMountainHeight(vec2 pos) {
     float wNoise = getWorleyNoise2d(pos*3.0, vec2(20.0, 20.0), vec2(1,2));
     wNoise = clamp(pow(wNoise + 0.4, 2.0),0.0, 1.0);
     float noise = mix(fNoise, wNoise, 0.7);
-    return 0.5 + pow(noise, 3.0) * 3.0;
+    return 4.5 + pow(noise, 3.0) * 3.0;
 }
 
 
@@ -154,7 +204,13 @@ float calcForrestHeight(vec2 pos) {
 }
 
 float calcCanyonHeight(vec2 pos) {
-    return 0.0;
+    float noise = fbm2to1(pos*.2, vec2(34.4, 64.4));
+    float height = 0.5 + smoothstep(0.4, 0.5, noise)*4.0 + pow(clamp(0.0,1.0,noise + 0.6), 10.0);
+    //flatten off water level
+    if(height < 1.0) height = 1.0;
+
+
+    return height;
 }
 
 float calcFoothillsHeight(vec2 pos) {
@@ -249,7 +305,7 @@ void main()
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
-  //fs_Biome = vec3(0.0, 0.0, 0.0);
+  fs_Biome = vec3(0.0, 1.0, 1.0);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
   fs_Nor = calcNormal(worldPlanePos, fs_Biome);
   fs_Col = vs_Col;
