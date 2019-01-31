@@ -150,13 +150,10 @@ vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
     vec4 terrainColor;
     vec4 rockColor1 = vec4(1.0, 0.5, 0.25, 1.0);
     vec4 rockColor2 = vec4(0.2, 0.2, 0.2, 1.0);
-    vec4 treeColor = vec4(0.0, 0.3, 0.0, 1.0);
     vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);
-    if(adjHeight< 0.4) {
-        terrainColor = treeColor;
-    }
-    else if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
+    if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
         terrainColor = mix(rockColor1, rockColor2, fbm2to1(pos, vec2(4,3)));
+        terrainColor.a = height - fbm2to1(pos+u_Time * 0.01, vec2(3.4,43.4)) * 0.1;
     }
     else {
         terrainColor = snowColor;
@@ -333,7 +330,7 @@ void main()
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
-  //fs_Biome = vec3(1.0, 0.0, 0.0);
+  fs_Biome = vec3(1.0, 0.0, 0.0);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
   fs_Nor = calcNormal(worldPlanePos, fs_Biome);
   fs_Col = calcColor(worldPlanePos, fs_Biome, fs_Height, fs_Nor);

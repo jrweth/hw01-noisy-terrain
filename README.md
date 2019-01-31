@@ -49,7 +49,8 @@ shader which used the position of the light source (sun) to adjust the color val
 Since the lambert shading developed in the previous step was based upon the light position, it was then possible to modify this position
 over time to create the effect of the sun transversing across the sky over time.  Therefore a uniform time value
 was added to the shader program so that the sun position could be calculated.   During the night the base color value was 
-adjusted to be nearly grey scale to simulate the moon transversal.  The background color was also adjust to simulate night time.
+adjusted to be nearly grey scale to simulate the moon transversal.  The background color was also adjust to simulate night :vsp
+time.
 ![](img/nighttime.png)
 
 ### Separating Terrain into Biomes using [Worley Noise](https://en.wikipedia.org/wiki/Worley_noise)
@@ -61,21 +62,38 @@ The worley noise map can then be combined with the height terrain to eventually 
 
 
 ### Criteria for selecting Biome type
-- elevation
-- moisture
-- erosion
+To simulate different biomes three measures created and distributed across the plane using FBM 
+with a very wide sample rate.  The biome divisions determined above were then assigined
+a particular biome via a combination of the three measures:
 
-Biomes:
-- Islands (low elevation, high moisture, high erosion) 
-- Farm Lands (low elevation, high moisture, low erosion)
-- Dessert (low elevation, low moisture, high erosion)
-- Monument Valley (low elevation , low moisture, low erosion)
+|biome| elevation | moisture | erosion |
+|-----| --------- | ---------|---------|
+| Monument Valley | low | low | low|
+| Dessert | low | low | high|
+| Farm Lands | low | high | low |
+| Islands | low | high | high |
+| Mountain | high | low | low |
+| Canyons | high | low | high|
+| Forrest | high | high | low |
+| Foothills | high | high | high |
 
-- Foothills (high elevation, high moisture, high erosion)
-- Forrest (high elevation, high moisture, low erosion)
-- Mountain (high elevation, low moisture, low erosion)
-- Canyons (high elevation , low moisture, high erosion)
 
+#### Mountain Biome
+The Mountain Biome adjusted the simple mountains already created and adjusted the equations slightly to create
+ additional effects
+ 
+ - Terrain Height
+   - Create worley noise with grid radius of 20 to create general mountain ranges and valleys
+   - Use exponential function to highlight greatest values `clamp(pow(wNoise + 0.4, 2.0),0.0, 1.0)`
+   - Mix Worley noise with FBM noise to create individual mountains `noise = mix(fNoise, wNoise, 0.7)`
+   - Use mapping function to raise range and sharpen peaks `height = 0.5 + pow(noise, 3.0) * 3.0`
+   
+ - Terrain Color
+   - Generally color lower elevations as dirt/stone, high as snow
+   - alter the stone color between two shades using FBM
+   - Perturb the height map so that snow line has more variability
+   - adjust the alpha using FBM with time factor to create moveable mist 
+![](img/biome_mountain.png)
 
 
 
