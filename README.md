@@ -96,7 +96,9 @@ The Mountain Biome adjusted the simple mountains already created and adjusted th
 ![](img/biome_mountain.png)
 
 
-
+#### Monument Valley Biome
+- Terrain Height
+  - created by the simple mapping equation `smoothstep(0.8, 0.85, noise+0.1) + pow(noise, 5.0)`
 
 
 

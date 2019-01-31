@@ -120,8 +120,13 @@ float fbm2to1(vec2 p, vec2 seed) {
 
 
 float calcMonumentValleyHeight(vec2 pos) {
-    return 0.0;
+    float noise = fbm2to1(pos*.2, vec2(34.4, 64.4));
+    float height = 0.5 + smoothstep(0.7, 0.85, noise+0.13)*4.0 + pow(noise, 5.0);
+
+    return height;
 }
+
+
 
 float calcDesertHeight(vec2 pos) {
     return 0.0;
@@ -143,23 +148,6 @@ float calcMountainHeight(vec2 pos) {
     return 0.5 + pow(noise, 3.0) * 3.0;
 }
 
-vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
-    //adjust the height a bit so we don't get striation
-    float adjHeight = height + fbm2to1(pos*5.1, vec2(3,4)) * 0.6 - 0.6;
-    //return vec4(vec3(height), 1.0);
-    vec4 terrainColor;
-    vec4 rockColor1 = vec4(1.0, 0.5, 0.25, 1.0);
-    vec4 rockColor2 = vec4(0.2, 0.2, 0.2, 1.0);
-    vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);
-    if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
-        terrainColor = mix(rockColor1, rockColor2, fbm2to1(pos, vec2(4,3)));
-        terrainColor.a = height - fbm2to1(pos+u_Time * 0.01, vec2(3.4,43.4)) * 0.1;
-    }
-    else {
-        terrainColor = snowColor;
-    }
-    return terrainColor;
-}
 
 float calcForrestHeight(vec2 pos) {
     return 0.0;
@@ -253,75 +241,6 @@ vec4 calcNormal(vec2 pos, vec3 biome) {
 
 }
 
-vec4 calcMonumentValleyColor(vec2 pos, float height, vec4 normal) {
-    //return vec4(0.3, 0.5, 0.0, 1.0);
-    return vec4(0.3, 0.5, 0.0, 1.0);
-}
-
-vec4 calcDesertColor(vec2 pos, float height, vec4 normal) {
-    return vec4(0.8, 0.6, 0.0, 1.0);
-}
-
-vec4 calcIslandColor(vec2 pos, float height, vec4 normal) {
-    return vec4(0.1, 0.1, 0.7, 1.0);
-}
-
-vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
-    return vec4(.9, 0.9, 0.1, 1.0);
-}
-
-
-vec4 calcForrestColor(vec2 pos, float height, vec4 normal) {
-    return vec4(0.0, 0.45, 0.05, 1.0);
-}
-
-vec4 calcCanyonColor(vec2 pos, float height, vec4 normal) {
-    return vec4(.65, .28, 0.20, 1.0);
-}
-
-vec4 calcFoothillsColor(vec2 pos, float height, vec4 normal) {
-    return vec4(.78, .97, .5, 1.0);
-}
-
-
-vec4 calcColor(vec2 pos, vec3 biome, float height, vec4 normal) {
-    //low elevations
-    if(biome[0] < 0.5) {
-       //low moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcMonumentValleyColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcDesertColor(pos, height, normal);
-       }
-       //high moisture
-       if(biome[1] >= 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcIslandColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcFarmLandColor(pos, height, normal);
-       }
-    }
-    //high elevations
-    if(biome[0] >- 0.5) {
-       //low moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcMountainColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcCanyonColor(pos, height, normal);
-       }
-       //high moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcForrestColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcFoothillsColor(pos, height, normal);
-       }
-    }
-    return vec4(calcBiome(pos), 1.0);
-}
-
 
 void main()
 {
@@ -330,10 +249,10 @@ void main()
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
-  fs_Biome = vec3(1.0, 0.0, 0.0);
+  fs_Biome = vec3(0.0, 0.0, 0.0);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
   fs_Nor = calcNormal(worldPlanePos, fs_Biome);
-  fs_Col = calcColor(worldPlanePos, fs_Biome, fs_Height, fs_Nor);
+  fs_Col = vs_Col;
 
   vec4 modelposition = vec4(vs_Pos.x, fs_Height, vs_Pos.z, 1.0);
 
