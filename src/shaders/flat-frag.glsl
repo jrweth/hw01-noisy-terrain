@@ -11,7 +11,7 @@ out vec4 out_Col;
 vec4 getSkyColor() {
    vec4 dayColor =   vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);
    vec4 nightColor =  vec4(0.05, 0.0, 0.2, 1.0);
-   float time = clamp(0.0, 1.0, sin(1.3 + (u_Time * u_SunSpeed/ 600.0)) + 0.9);
+   float time = clamp(0.0, 1.0, sin(1.3 + (u_Time * u_SunSpeed/ 600.0)));
    return mix(nightColor, dayColor, time);
 }
 

@@ -137,12 +137,14 @@ float fbm1to1(float p, vec2 seed) {
     return total;
 }
 
+float getTime() {
+   return clamp(0.0, 1.0, sin(1.3 + (u_Time * u_SunSpeed/ 600.0)));
+}
 
 vec4 getSkyColor() {
    vec4 dayColor =   vec4(164.0 / 255.0, 233.0 / 255.0, 1.0, 1.0);
    vec4 nightColor =  vec4(0.05, 0.0, 0.2, 1.0);
-   float time = clamp(0.0, 1.0, sin(1.0 + (u_Time * u_SunSpeed/ 600.0)));
-   return mix(nightColor, dayColor, time);
+   return mix(nightColor, dayColor, getTime());
 }
 
 
@@ -151,7 +153,6 @@ vec4 calcMonumentValleyColor(vec2 pos, float height, vec4 normal) {
     vec4 grassColor = vec4(0.09, 0.38, 0.12, 1.0);
     vec4 rockColor1 = vec4(1.0, 0.5, 0.25, 1.0);
     vec4 rockColor2 = vec4(0.988, 0.684, 0.492, 1.0);
-    vec4 rockColor3 = vec4(0.792, 0.65, 0.57, 1.0);
     vec4 color;
 
     float height2 = height;
@@ -179,6 +180,8 @@ vec4 calcMonumentValleyColor(vec2 pos, float height, vec4 normal) {
 }
 
 vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
+
+    float sunHeight = normalize(fs_LightVector).y;
     //adjust the height a bit so we don't get striation
     float adjHeight = height + fbm2to1(pos*5.1, vec2(3,4)) * 0.6 - 0.6;
     //return vec4(vec3(height), 1.0);
@@ -188,7 +191,7 @@ vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
     vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);
     if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
         terrainColor = mix(rockColor1, rockColor2, fbm2to1(pos, vec2(4,3)));
-        terrainColor.a = height - fbm2to1(pos+u_Time * 0.01, vec2(3.4,43.4)) * 0.1;
+        terrainColor =  mix(vec4(1.0,1.0,1.0,1.0), terrainColor,  height - fbm2to1(pos+u_Time * 0.01, vec2(3.4,43.4)) * 0.1);
     }
     else {
         terrainColor = snowColor;
@@ -279,9 +282,9 @@ void main()
     else{
         float moonDiffuseTerm = dot(normalize(normal.xyz), normalize(vec3(-1.0 * fs_LightVector.x, -1.0*fs_LightVector.y, fs_LightVector.z)));
         float ambientTerm = 0.3;
-        float moonIntensity = clamp(0.2, 1.0, moonDiffuseTerm + ambientTerm) * moonHeight;   //Add a small float value to the color multiplier
-        vec3 greyscaledColor = mix(col.rgb, vec3(length(col.xyz)/3.0), 0.9);
-        diffuseColor = vec4(greyscaledColor.rgb * moonDiffuseTerm, col.a);
+        float moonIntensity = clamp(0.2, 1.0, moonDiffuseTerm + ambientTerm) * moonHeight * 0.5;   //Add a small float value to the color multiplier
+        vec3 greyscaledColor = mix(col.rgb, vec3(length(col.xyz)/3.0), 0.6);
+        diffuseColor = vec4(greyscaledColor.rgb * moonDiffuseTerm * moonIntensity, 1.0 );
     }
 
     float t = clamp(smoothstep(40.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog

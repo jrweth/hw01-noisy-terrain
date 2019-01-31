@@ -13,7 +13,7 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
-  'Sun Speed': 10.0,
+  'Sun Speed': 1.0,
 };
 
 let square: Square;

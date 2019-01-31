@@ -249,7 +249,7 @@ void main()
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
-  fs_Biome = vec3(0.0, 0.0, 0.0);
+  //fs_Biome = vec3(0.0, 0.0, 0.0);
   fs_Height = calcHeight(worldPlanePos, fs_Biome);
   fs_Nor = calcNormal(worldPlanePos, fs_Biome);
   fs_Col = vs_Col;

@@ -100,5 +100,14 @@ The Mountain Biome adjusted the simple mountains already created and adjusted th
 - Terrain Height
   - created by the simple mapping equation `smoothstep(0.8, 0.85, noise+0.1) + pow(noise, 5.0)`
 
+- Terrain Color
+  - perturbed the height field so bands of color are not quite so regular
+  - for mountain types alternated between two rock hues using FBM
+  - when the slope of the ground was close to horizontal create grass
+   sections by using FBM, then make the grass sparse by using another FBM to
+   mix it with the underlying color
+ ![](img/biome_monument.png)  
+  ` 
+   
 
 
