@@ -31,7 +31,9 @@ class ShaderProgram {
   unifColor: WebGLUniformLocation;
   unifPlanePos: WebGLUniformLocation;
   unifSunSpeed: WebGLUniformLocation;
+  unifMistSpeed: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
+  unifFieldSize: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -52,7 +54,9 @@ class ShaderProgram {
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
     this.unifPlanePos      = gl.getUniformLocation(this.prog, "u_PlanePos");
     this.unifSunSpeed     = gl.getUniformLocation(this.prog, "u_SunSpeed");
+    this.unifMistSpeed     = gl.getUniformLocation(this.prog, "u_MistSpeed");
     this.unifTime       = gl.getUniformLocation(this.prog, "u_Time");
+    this.unifFieldSize       = gl.getUniformLocation(this.prog, "u_FieldSize");
   }
 
   use() {
@@ -97,10 +101,24 @@ class ShaderProgram {
     }
   }
 
+  setFieldSize(size: number) {
+    this.use();
+    if (this.unifSunSpeed !== -1) {
+      gl.uniform1f(this.unifFieldSize, size);
+    }
+  }
+
   setSunSpeed(speed: number) {
     this.use();
     if (this.unifSunSpeed !== -1) {
       gl.uniform1f(this.unifSunSpeed, speed);
+    }
+  }
+
+  setMistSpeed(speed: number) {
+    this.use();
+    if (this.unifMistSpeed !== -1) {
+      gl.uniform1f(this.unifMistSpeed, speed);
     }
   }
 

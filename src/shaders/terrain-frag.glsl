@@ -4,6 +4,8 @@ precision highp float;
 uniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane
 uniform float u_Time;
 uniform float u_SunSpeed;
+uniform float u_MistSpeed;
+uniform float u_FieldSize;
 
 in vec3 fs_Pos;
 in vec4 fs_Nor;
@@ -192,7 +194,7 @@ vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
     vec4 snowColor  = vec4(1.0, 1.0, 1.0,  1.0);
     if(adjHeight < 1.3 + (sin(pos.x) +cos(pos.y))*0.2 ) {
         terrainColor = mix(rockColor1, rockColor2, fbm2to1(pos, vec2(4,3)));
-        terrainColor =  mix(vec4(1.0,1.0,1.0,1.0), terrainColor,  height - fbm2to1(pos+u_Time * 0.01, vec2(3.4,43.4)) * 0.1);
+        terrainColor =  mix(vec4(1.0,1.0,1.0,1.0), terrainColor,  height - fbm2to1(pos+u_Time * 0.02 * u_MistSpeed, vec2(3.4,43.4)) * 0.15);
     }
     else {
         terrainColor = snowColor;
@@ -200,12 +202,10 @@ vec4 calcMountainColor(vec2 pos, float height, vec4 normal) {
     return terrainColor;
 }
 vec4 calcDesertColor(vec2 pos, float height, vec4 normal) {
+    return calcMonumentValleyColor(pos, height, normal);
     return vec4(0.8, 0.6, 0.0, 1.0);
 }
 
-vec4 calcIslandColor(vec2 pos, float height, vec4 normal) {
-    return vec4(0.1, 0.1, 0.7, 1.0);
-}
 
 vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
 
@@ -217,7 +217,7 @@ vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
     }
 
     //get a random value for the field
-    vec2 wPoint = getClosestWorleyPoint2d(pos, vec2(10.0, 10.0), vec2(3,2));
+    vec2 wPoint = getClosestWorleyPoint2d(pos, vec2(u_FieldSize, u_FieldSize), vec2(3,2));
     float fieldRandom = random1(wPoint, vec2(1,0));
     vec4 cropColor = vec4(1.0);
 
@@ -240,6 +240,7 @@ vec4 calcFarmLandColor(vec2 pos, float height, vec4 normal) {
 
 
 vec4 calcForrestColor(vec2 pos, float height, vec4 normal) {
+    return calcMountainColor(pos, height, normal);
     return vec4(0.0, 0.45, 0.05, 1.0);
 }
 
@@ -257,8 +258,13 @@ vec4 calcCanyonColor(vec2 pos, float height, vec4 normal) {
     }
     return color;
 }
+vec4 calcIslandColor(vec2 pos, float height, vec4 normal) {
+    return calcCanyonColor(pos, height, normal);
+    return vec4(0.1, 0.1, 0.7, 1.0);
+}
 
 vec4 calcFoothillsColor(vec2 pos, float height, vec4 normal) {
+    return calcCanyonColor(pos, height, normal);
     return vec4(.78, .97, .5, 1.0);
 }
 

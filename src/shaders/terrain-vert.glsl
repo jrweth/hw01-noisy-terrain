@@ -7,6 +7,8 @@ uniform mat4 u_ViewProj;
 uniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane
 uniform float u_Time;   //Time (in terms of frames)
 uniform float u_SunSpeed;
+uniform float u_MistSpeed;
+uniform float u_FieldSize;
 
 in vec4 vs_Pos;
 in vec4 vs_Nor;
@@ -16,18 +18,20 @@ out vec3 fs_Pos;
 out vec4 fs_Nor;
 out vec4 fs_Col;
 out vec4 fs_LightVector;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.
+out float fs_Height;
 
 //Biome Data necessary for shader
 const int numBiomes = 8;
-out float[numBiomes] fs_BiomeHeight;
-out vec4[numBiomes] fs_BiomeNormal;
-out float[numBiomes] fs_BiomePercentage;
+float[numBiomes] fs_BiomeHeight;
+
+vec4[numBiomes] fs_BiomeNormal;
+float[numBiomes] fs_BiomePercentage;
 flat out int fs_Biome;
 
 
-out float fs_Height;
-
+//
 const vec4 vs_LightPosition = vec4(500.0, 50.0, 0.0, 0.0);
+vec2[9] worleyPoints;
 
 float random1( vec2 p , vec2 seed) {
   return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);
@@ -45,6 +49,97 @@ vec2 random2( vec2 p , vec2 seed) {
 //get the grid position of the lower corner for the given position
 vec2 getGridSection2d(vec2 pos, float gridSize) {
    return pos - mod(pos, gridSize);
+}
+
+
+/*
+Order the supplied list of points by their distance from the supplied point
+*/
+void orderPointsByDistance(in vec2 point, inout vec2[9] points){
+    bool changeMade;
+    vec2 tempPoint;
+    do{
+        changeMade = false;
+        for(int i=0; i<8; i++) {
+            if(length(point - points[i]) > length(point - points[i+1])) {
+                changeMade = true;
+                tempPoint = points[i];
+                points[i] = points[i+1];
+                points[i+1] = tempPoint;
+            }
+        }
+    } while (changeMade == true);
+}
+
+
+vec2[9] getNeigboringWorleyPoints2d(vec2 pos, vec2 gridSize, vec2 seed) {
+
+    vec2[9] points;
+    vec2 centerGridPos = pos - mod(pos, gridSize);  //the corner of the grid in which this point resides
+    vec2 currentGridPos;
+    int index = 0;
+
+    for(float gridX = -1.0; gridX <= 1.0; gridX += 1.0) {
+        for(float gridY = -1.0; gridY <= 1.0; gridY += 1.0) {
+            currentGridPos = centerGridPos + vec2(gridX, gridY) * gridSize;
+            points[index++] = currentGridPos + random2(currentGridPos, seed) * gridSize;
+        }
+    }
+    orderPointsByDistance(pos, points);
+    return points;
+}
+
+void insertAtIndex(in vec2 p, inout vec2[9] points, int index) {
+    for(int i = 8; i > index; i--) {
+        points[i] = points[i-1];
+    }
+    points[index] = p;
+}
+
+void insertAtIndex(in float p, inout float[9] points, int index) {
+    for(int i = 8; i > index; i--) {
+        points[i] = points[i-1];
+    }
+    points[index] = p;
+}
+
+vec2[9] getPoints(vec2 pos, vec2 gridSize, vec2 seed) {
+    vec2[9] points;
+    float[9] distances;
+    for(int i =0; i< 9; i++) {
+        points[i] = vec2(0.0,0.0);
+        distances[i] = 100000.0;
+    }
+
+    vec2 centerGridPos = pos - mod(pos, gridSize);  //the corner of the grid in which this point resides
+
+    vec2 currentGridPos;
+    vec2 currentWorleyPoint;
+    float currentDistance;
+    int currentIndex = 0;
+    //loop through the 9 grid sections surrouding this one to find the closes worley point
+    for(float gridX = -1.0; gridX <= 1.0; gridX += 1.0) {
+        for(float gridY = -1.0; gridY <= 1.0; gridY += 1.0) {
+            currentGridPos = centerGridPos + vec2(gridX, gridY) * gridSize;
+            currentWorleyPoint = currentGridPos + random2(currentGridPos, seed) * gridSize;
+            currentDistance = length(currentWorleyPoint - pos);
+
+            //put it where it belongs
+            for(int i = 0; i <= currentIndex; i++) {
+               if(currentDistance < distances[i]) {
+                    for(int j = 8; j > i; j--) {
+                        points[i] = points[i-1];
+                        distances[i] = distances[i-1];
+                    }
+                    points[i] = currentWorleyPoint;
+                    distances[i] = currentDistance;
+               }
+            }
+
+            currentIndex++;
+        }
+    }
+    return points;
 }
 
 /*
@@ -177,6 +272,7 @@ float calcMonumentValleyHeight(vec2 pos) {
 
 
 float calcDesertHeight(vec2 pos) {
+    return calcMonumentValleyHeight(pos);
     return 0.0;
 }
 
@@ -185,8 +281,8 @@ float calcIslandHeight(vec2 pos) {
 }
 
 float calcFarmLandHeight(vec2 pos) {
-    float height = 0.3 + fbm2to1(pos*0.1, vec2(10.0, 10.0))*0.1 ;
-    float onBoundary = onWorleyBoundary(pos, vec2(10.0, 10.0), 1.0, vec2(3,2));
+    float height = 0.3 + fbm2to1(pos*0.1, vec2(u_FieldSize, u_FieldSize))*0.1 ;
+    float onBoundary = onWorleyBoundary(pos, vec2(u_FieldSize, u_FieldSize), 1.0, vec2(3,2));
     if(onBoundary > 0.0) {
         height = 0.3 -smoothstep(.3, .7, onBoundary) * 0.2;
 //        if(onBoundary > 0.9)
@@ -206,6 +302,7 @@ float calcMountainHeight(vec2 pos) {
 
 
 float calcForrestHeight(vec2 pos) {
+    return calcMountainHeight(pos);
     return 0.0;
 }
 
@@ -220,6 +317,7 @@ float calcCanyonHeight(vec2 pos) {
 }
 
 float calcFoothillsHeight(vec2 pos) {
+    return calcCanyonHeight(pos);
     return 0.0;
 }
 
@@ -254,7 +352,7 @@ int calcBiome(vec2 pos) {
     vec2 worleyGridSize = vec2(40.0, 40.0);
 
     //set the biome based upon the noise values at the nearest worley point
-    vec2 closestWorleyPoint = getClosestWorleyPoint2d(pos, worleyGridSize, vec2(1.0, 2.0));
+    vec2 closestWorleyPoint = worleyPoints[0];
 
     //get the elevation/moisture and erosion values
     int elevation = int(floor(fbm2to1(closestWorleyPoint / biomeSize, vec2(1.0, 2.0)) + 0.5));
@@ -283,6 +381,7 @@ vec4 calcBiomeNormal(vec2 pos, int biome) {
 
 }
 
+
 /**
 Initialize the biom data to pass to the fragment shader
 **/
@@ -294,6 +393,55 @@ void initBiomes() {
     }
 }
 
+void calcBiomePercentages(vec2 pos) {
+    float borderThreshold = 5.0;
+
+    vec2 p1 = getClosestWorleyPoint2d(pos, vec2(50.0,50.0), vec2(1.0,2.0));
+    vec2 p2 = getNextWorleyPoint2d(pos, vec2(50.0,50.0), vec2(1.0,2.0));
+
+    //if the distance from our point to the first worley point is way more
+    // than  the distance to the second worley point we just have to
+    // worry about one biomeo
+    float dist1 = length(pos - p1);
+    float dist2 = length(pos - p2);
+    int point2Biome = calcBiome(worleyPoints[1]);
+    if(dist2 - dist1 > borderThreshold || fs_Biome == point2Biome) {
+        fs_BiomePercentage[fs_Biome] = 1.0;
+    }
+
+    else {
+        fs_BiomePercentage[fs_Biome] = dist2 / (dist1 + dist2);
+        fs_BiomePercentage[point2Biome] = dist1 / (dist1 + dist2);
+    }
+}
+
+//this assumes we have already calculated the biome percentages
+void calcBiomeHeights(vec2 pos) {
+    for(int i=0; i<numBiomes; i++) {
+        if(fs_BiomePercentage[i] > 0.0) {
+            fs_BiomeHeight[i] = calcBiomeHeight(pos, i);
+        }
+    }
+
+}
+
+void calcBiomeNormals(vec2 pos) {
+    for(int i=0; i<numBiomes; i++) {
+        if(fs_BiomePercentage[i] > 0.0) {
+            fs_BiomeNormal[i] = calcBiomeNormal(pos, i);
+        }
+    }
+}
+
+float calcHeight() {
+    float height = 0.0;
+    for(int i=0; i<numBiomes; i++) {
+        if(fs_BiomePercentage[i] > 0.0) {
+            height += fs_BiomePercentage[i] * fs_BiomeHeight[i];
+        }
+    }
+    return height;
+}
 
 
 void main()
@@ -301,11 +449,18 @@ void main()
   initBiomes();
   float sampling = 1.0;
   vec2 worldPlanePos = vs_Pos.xz + u_PlanePos;
+  float biomeSize = 10.0;
+  vec2 worleyGridSize = vec2(50.0, 50.0);
+  vec2 worleySeed = vec2(1.0,2.0);
+  worleyPoints = getPoints(worldPlanePos, worleyGridSize, worleySeed);
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
-  //fs_Biome = vec3(0.0, 1.0, 1.0);
-  fs_Height = calcBiomeHeight(worldPlanePos, fs_Biome);
+  calcBiomePercentages(worldPlanePos);
+  calcBiomeHeights(worldPlanePos);
+  calcBiomeNormals(worldPlanePos);
+
+  fs_Height = calcHeight();
   fs_Nor = calcBiomeNormal(worldPlanePos, fs_Biome);
   fs_Col = vs_Col;
 

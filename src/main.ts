@@ -13,7 +13,9 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
-  'Sun Speed': 0.0,
+  'Sun Speed': 1.0,
+  'Field Size': 10.0,
+  'Mist Speed': 1.0
 };
 
 let square: Square;
@@ -84,6 +86,8 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
   gui.add(controls, 'Sun Speed', {'0': 0.0, '1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0});
+  gui.add(controls, 'Mist Speed', {'0': 0.0, '1/10': 0.1, '1/4': 0.25, '1/2': 0.5, 'normal': 1.0, 'x2': 2.0, 'x4': 4.0, 'x10': 10.0});
+  gui.add(controls, 'Field Size', {'2': 2.0, '5': 5.0, '10': 10.0, '20': 20.0, '30': 30.0});
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -143,6 +147,8 @@ function main() {
     renderer.clear();
     renderer.setTime(time++);
     renderer.setSunSpeed(controls["Sun Speed"]);
+    renderer.setFieldSize(controls['Field Size']);
+    renderer.setMistSpeed(controls['Mist Speed']);
     processKeyPresses();
     renderer.render(camera, lambert, [
       plane,

@@ -8,6 +8,8 @@ import ShaderProgram from './ShaderProgram';
 class OpenGLRenderer {
   time: number;
   sunSpeed: number;
+  fieldSize: number;
+  mistSpeed: number;
 
   constructor(public canvas: HTMLCanvasElement) {
   }
@@ -29,6 +31,14 @@ class OpenGLRenderer {
     this.time = time;
   }
 
+  setFieldSize(size: number) {
+    this.fieldSize = size;
+  }
+
+  setMistSpeed(speed: number) {
+    this.mistSpeed = speed;
+  }
+
   clear() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   }
@@ -44,6 +54,8 @@ class OpenGLRenderer {
     prog.setViewProjMatrix(viewProj);
     prog.setTime(this.time);
     prog.setSunSpeed(this.sunSpeed);
+    prog.setMistSpeed(this.mistSpeed);
+    prog.setFieldSize(this.fieldSize);
 
     for (let drawable of drawables) {
       prog.draw(drawable);
