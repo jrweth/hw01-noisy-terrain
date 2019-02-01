@@ -9,7 +9,7 @@ in vec3 fs_Pos;
 in vec4 fs_Nor;
 in vec4 fs_Col;
 in vec4 fs_LightVector;
-in vec3 fs_Biome;
+flat in int fs_Biome;
 
 in float fs_Height;
 
@@ -262,41 +262,16 @@ vec4 calcFoothillsColor(vec2 pos, float height, vec4 normal) {
     return vec4(.78, .97, .5, 1.0);
 }
 
-vec4 calcColor(vec2 pos, vec3 biome, float height, vec4 normal) {
+vec4 calcColor(vec2 pos, int biome, float height, vec4 normal) {
     //low elevations
-    if(biome[0] < 0.5) {
-       //low moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcMonumentValleyColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcDesertColor(pos, height, normal);
-       }
-       //high moisture
-       if(biome[1] >= 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcIslandColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcFarmLandColor(pos, height, normal);
-       }
-    }
-    //high elevations
-    if(biome[0] >- 0.5) {
-       //low moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcMountainColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcCanyonColor(pos, height, normal);
-       }
-       //high moisture
-       if(biome[1] < 0.5) {
-          //low erosion
-          if(biome[2] < 0.5) return calcForrestColor(pos, height, normal);
-          //high erosion
-          if(biome[2] >= 0.5) return calcFoothillsColor(pos, height, normal);
-       }
-    }
+    if(biome == 0) return calcMonumentValleyColor(pos, height, normal);
+    if(biome == 1) return calcDesertColor(pos, height, normal);
+    if(biome == 2) return calcIslandColor(pos, height, normal);
+    if(biome == 3) return calcFarmLandColor(pos, height, normal);
+    if(biome == 4) return calcMountainColor(pos, height, normal);
+    if(biome == 5) return calcCanyonColor(pos, height, normal);
+    if(biome == 6) return calcForrestColor(pos, height, normal);
+    if(biome == 7) return calcFoothillsColor(pos, height, normal);
     return vec4(1,1,1, 1.0);
 }
 

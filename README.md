@@ -66,16 +66,16 @@ To simulate different biomes three measures created and distributed across the p
 with a very wide sample rate.  The biome divisions determined above were then assigined
 a particular biome via a combination of the three measures:
 
-|biome| elevation | moisture | erosion |
-|-----| --------- | ---------|---------|
-| Monument Valley | low | low | low|
-| Dessert | low | low | high|
-| Farm Lands | low | high | low |
-| Islands | low | high | high |
-| Mountain | high | low | low |
-| Canyons | high | low | high|
-| Forrest | high | high | low |
-| Foothills | high | high | high |
+| biome num | biome| elevation | moisture | erosion |
+| ----------|-----| --------- | ---------|---------|
+| 0 | Monument Valley | low | low | low|
+| 1 | Dessert | low | low | high|
+| 2 | Farm Lands | low | high | low |
+| 3 | Islands | low | high | high |
+| 4 | Mountain | high | low | low |
+| 5 | Canyons | high | low | high|
+| 6 | Forrest | high | high | low |
+| 7 | Foothills | high | high | high |
 
 
 #### Mountain Biome
@@ -117,6 +117,11 @@ The Mountain Biome adjusted the simple mountains already created and adjusted th
  - Terrain Color
    - Used Monument Valley color but added water coloring
  ![](img/biome_canyon.png)  
+ 
+ 
+ ### Farmlands
+ - Terrain Height
+   - The Basic structure is to divide the plan via worley noise.  Each worley point is then assigned a color 
   ` 
    
 

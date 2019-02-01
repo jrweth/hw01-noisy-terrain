@@ -16,7 +16,13 @@ out vec3 fs_Pos;
 out vec4 fs_Nor;
 out vec4 fs_Col;
 out vec4 fs_LightVector;       // The direction in which our virtual light lies, relative to each vertex. This is implicitly passed to the fragment shader.
-out vec3 fs_Biome;             // represents the biome [elevation, moisture, erosion] 0.0 for low, 1 for high
+
+//Biome Data necessary for shader
+const int numBiomes = 8;
+out float[numBiomes] fs_BiomeHeight;
+out vec4[numBiomes] fs_BiomeNormal;
+out float[numBiomes] fs_BiomePercentage;
+flat out int fs_Biome;
 
 
 out float fs_Height;
@@ -217,53 +223,31 @@ float calcFoothillsHeight(vec2 pos) {
     return 0.0;
 }
 
-float calcHeight(vec2 pos, vec3 biome) {
-//    return calcMountainHeight(pos);
-       //low elevations
-       if(biome[0] < 0.5) {
-          //low moisture
-          if(biome[1] < 0.5) {
-             //low erosion
-             if(biome[2] < 0.5) return calcMonumentValleyHeight(pos);
-             //high erosion
-             if(biome[2] >= 0.5) return calcDesertHeight(pos);
-          }
-          //high moisture
-          if(biome[1] >= 0.5) {
-             //low erosion
-             if(biome[2] < 0.5) return calcIslandHeight(pos);
-             //high erosion
-             if(biome[2] >= 0.5) return calcFarmLandHeight(pos);
-          }
-       }
-       //high elevations
-       if(biome[0] >= 0.5) {
-          //low moisture
-          if(biome[1] < 0.5) {
-             //low erosion
-             if(biome[2] < 0.5) return calcMountainHeight(pos);
-             //high erosion
-             if(biome[2] >= 0.5) return calcCanyonHeight(pos);
-          }
-          //high moisture
-          if(biome[1] < 0.5) {
-             //low erosion
-             if(biome[2] < 0.5) return calcForrestHeight(pos);
-             //high erosion
-             if(biome[2] >= 0.5) return calcFoothillsHeight(pos);
-          }
-       }
-
-       return 0.0;
+float calcBiomeHeight(vec2 pos, int biome) {
+    if(biome == 0) return calcMonumentValleyHeight(pos);
+    if(biome == 1) return calcDesertHeight(pos);
+    if(biome == 2) return calcIslandHeight(pos);
+    if(biome == 3) return calcFarmLandHeight(pos);
+    if(biome == 4) return calcMountainHeight(pos);
+    if(biome == 5) return calcCanyonHeight(pos);
+    if(biome == 6) return calcForrestHeight(pos);
+    return calcFoothillsHeight(pos);
 }
 
 
 /**
-Calcuate the biome based upon the closest worley poing
-- return vec
+Calcuate the biome based upon sampling of noise at the closest worley point
+- 0 = Monument Valley
+- 1 = Dessert
+- 2 = Farm Lands
+- 3 = Islancs
+- 4 = Mountain
+- 5 = Canyons
+- 6 = Forrest
+- 7 = Foothills
 **/
 
-vec3 calcBiome(vec2 pos) {
+int calcBiome(vec2 pos) {
 
     vec3 biome;
     float biomeSize = 10.0;
@@ -273,41 +257,56 @@ vec3 calcBiome(vec2 pos) {
     vec2 closestWorleyPoint = getClosestWorleyPoint2d(pos, worleyGridSize, vec2(1.0, 2.0));
 
     //get the elevation/moisture and erosion values
-    biome[0] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(1.0, 2.0)) + 0.5);
-    biome[1] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(2.0, 3.0)) + 0.5);
-    biome[2] = floor(fbm2to1(closestWorleyPoint/biomeSize, vec2(3.0, 4.0)) + 0.5);
-    return biome;
+    int elevation = int(floor(fbm2to1(closestWorleyPoint / biomeSize, vec2(1.0, 2.0)) + 0.5));
+    int moisture =  int(floor(fbm2to1(closestWorleyPoint / biomeSize, vec2(2.0, 3.0)) + 0.5));
+    int erosion =   int(floor(fbm2to1(closestWorleyPoint / biomeSize, vec2(3.0, 4.0)) + 0.5));
+
+    return elevation * 4 + moisture * 2 + erosion;
+
 }
 
 /**
 Calculate the normal for each vertex by getting the height of the four
 surrounding vertex and calculate the slope between them
 */
-vec4 calcNormal(vec2 pos, vec3 biome) {
+vec4 calcBiomeNormal(vec2 pos, int biome) {
 
     //get the four surrounding points
     float sampleDistance = 0.1;
-    vec3 x1 = vec3(pos.x, calcHeight(pos - vec2(0.0, sampleDistance), biome), pos.y - sampleDistance);
-    vec3 x2 = vec3(pos.x, calcHeight(pos + vec2(0.0, sampleDistance), biome), pos.y + sampleDistance);
+    vec3 x1 = vec3(pos.x, calcBiomeHeight(pos - vec2(0.0, sampleDistance), biome), pos.y - sampleDistance);
+    vec3 x2 = vec3(pos.x, calcBiomeHeight(pos + vec2(0.0, sampleDistance), biome), pos.y + sampleDistance);
 
-    vec3 y1 = vec3(pos.x - sampleDistance, calcHeight(pos - vec2(sampleDistance, 0.0), biome), pos.y);
-    vec3 y2 = vec3(pos.x + sampleDistance, calcHeight(pos + vec2(sampleDistance, 0.0), biome), pos.y);
+    vec3 y1 = vec3(pos.x - sampleDistance, calcBiomeHeight(pos - vec2(sampleDistance, 0.0), biome), pos.y);
+    vec3 y2 = vec3(pos.x + sampleDistance, calcBiomeHeight(pos + vec2(sampleDistance, 0.0), biome), pos.y);
 
     return vec4(normalize(cross(x1-x2, y1-y2)), 1.0);
 
 }
 
+/**
+Initialize the biom data to pass to the fragment shader
+**/
+void initBiomes() {
+    for(int i = 0; i<8; i++) {
+        fs_BiomeHeight[i] = 0.0;
+        fs_BiomeNormal[i] = vec4(0.0, 1.0, 0.0, 1.0);
+        fs_BiomePercentage[i] = 0.0;
+    }
+}
+
+
 
 void main()
 {
+  initBiomes();
   float sampling = 1.0;
   vec2 worldPlanePos = vs_Pos.xz + u_PlanePos;
 
   fs_Pos = vs_Pos.xyz;
   fs_Biome = calcBiome(worldPlanePos);
   //fs_Biome = vec3(0.0, 1.0, 1.0);
-  fs_Height = calcHeight(worldPlanePos, fs_Biome);
-  fs_Nor = calcNormal(worldPlanePos, fs_Biome);
+  fs_Height = calcBiomeHeight(worldPlanePos, fs_Biome);
+  fs_Nor = calcBiomeNormal(worldPlanePos, fs_Biome);
   fs_Col = vs_Col;
 
   vec4 modelposition = vec4(vs_Pos.x, fs_Height, vs_Pos.z, 1.0);
